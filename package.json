@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx ./src/index.ts"
+    "start": "tsx ./src/index.ts",
+    "generate": "npx drizzle-kit generate",
+    "migrate": "npx drizzle-kit migrate"
   },
   "type": "module",
   "repository": {
@@ -21,7 +22,13 @@
   "homepage": "https://github.com/lamkintj/bootdotdev-aggregator#readme",
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "fast-xml-parser": "^5.5.8",
+    "postgres": "^3.4.8"
   }
 }
