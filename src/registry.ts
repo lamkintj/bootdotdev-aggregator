@@ -7,6 +7,8 @@ import { handlerGetUsers,
     handlerAgg,
     handlerAddFeed,
     handlerListFeeds,
+    handlerAddFollow,
+    handlerFollowing,
 } from "./handler";
 
 export async function initRegistry(): Promise<Record<string, CommandHandler>> {
@@ -18,6 +20,8 @@ export async function initRegistry(): Promise<Record<string, CommandHandler>> {
     await registerCommand(registry, "agg", handlerAgg);
     await registerCommand(registry, "addfeed", handlerAddFeed);
     await registerCommand(registry, "feeds", handlerListFeeds);
+    await registerCommand(registry, "follow", handlerAddFollow);
+    await registerCommand(registry, "following", handlerFollowing);
 
     return registry;
 }

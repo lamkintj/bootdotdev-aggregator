@@ -1,8 +1,9 @@
-import { readConfig, setUser } from "./config";
+import { Config, readConfig, setUser } from "./config";
 import { getUser, createUser, getAllUsers } from "./lib/db/queries/users";
 import { fetchFeed } from "./feed";
 import { createFeed } from "./lib/db/queries/feeds";
-import { users, feeds } from "./lib/db/schema";
+import { createFeedFollow, getFeedFollowsForUser } from "./lib/db/queries/follows";
+import { users, feeds} from "./lib/db/schema";
 import { db } from "./lib/db";
 import { eq } from "drizzle-orm";
 
@@ -91,36 +92,83 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]): Promis
     const feedName = args[0];
     const feedURL = args[1];
     const currentUser = config.currentUserName;
-    const user = await getUser(currentUser);
-    const user_id = user.id;
-    const feed = await createFeed(feedName, feedURL, user_id);
-    printFeed(feed, user);
+    const userData = await getUser(currentUser);
+    const feedData = await createFeed(feedName, feedURL, userData.id);
+    const followData = await createFeedFollow(currentUser, feedURL);
+
+    printFeed(feedData, userData, followData);
     process.exit(0);
 }
 
-function printFeed(feed: Feed, user: User) {
+function printFeed(feed: Feed, user: User, follow: Follow) {
     console.log(`Printing fields of feeds table`);
-    console.log("");
     console.log(`id: ${feed.id}`);
     console.log(`name: ${feed.name}`);
     console.log(`created at: ${feed.createdAt}`);
     console.log(`updated at: ${feed.updatedAt}`);
     console.log(`url: ${feed.url}`);
-    console.log(`user id: ${feed.userId}`);
-    console.log("");
-    console.log(`Printing fields of feeds table`);
-    console.log("");
+    console.log(`user id: ${feed.userId}\n`);
+
+    console.log(`Printing fields of users table`);
     console.log(`id: ${user.id}`);
     console.log(`name: ${user.name}`);
     console.log(`created at: ${user.createdAt}`);
-    console.log(`updated at: ${user.updatedAt}`);
+    console.log(`updated at: ${user.updatedAt}\n`);
+
+    console.log(`Printing data from feed follow entry`)
+    console.log(`${JSON.stringify(follow, null, 2)}`);
 }
 
 export type Feed = typeof feeds.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type Follow = {
+    followRecord: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        feedId: string;
+        userId: string;
+    };
+    feedName: string;
+    userName: string;
+};
 
-export async function handlerListFeeds() {
+export async function handlerListFeeds(cmdName: string, ...args: string[]): Promise<void> {
+    if (args.length !== 0) {
+        console.log(`Usage: ${cmdName}`);
+        process.exit(1);
+    }
     const feedList = await db.select({name: feeds.name, url: feeds.url, user: users.name}).from(feeds).innerJoin(users, eq(users.id, feeds.userId));
     
     console.log(feedList);
+    process.exit(0);
 }
+
+export async function handlerAddFollow(cmdName: string, ...args: string[]): Promise<void> {
+    if (args.length !== 1) {
+        console.log(`Usage: ${cmdName} <url>`);
+        process.exit(1);
+    }
+    const url: string = args[0];
+    const config = readConfig();
+    const currentUser: string = config.currentUserName;
+    const feedData = await createFeedFollow(currentUser, url);
+    console.log(`${JSON.stringify(feedData, null, 2)}`);
+    process.exit(0);
+}
+
+export async function handlerFollowing (cmdName: string, ...args: string[]): Promise<void> {
+     if (args.length !== 0) {
+        console.log(`Usage: ${cmdName}`);
+        process.exit(1);
+    }
+    const config: Config = readConfig();
+    const username: string = config.currentUserName;
+
+    const followingList = await getFeedFollowsForUser(username);
+    
+    console.log(`Feeds followed by user ${username}:`);
+    for (const feed of followingList) {
+        console.log(`   -${feed.feedName}`);
+    }
+};
