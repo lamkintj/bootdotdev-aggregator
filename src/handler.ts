@@ -4,6 +4,8 @@ import { fetchFeed } from "./feed";
 import { createFeed } from "./lib/db/queries/feeds";
 import { users, feeds } from "./lib/db/schema";
 import { db } from "./lib/db";
+import { eq } from "drizzle-orm";
+
 
 export async function handlerLogin(cmdName: string, ...args: string[]): Promise<void> {
     if (args.length !== 1) {
@@ -97,13 +99,28 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]): Promis
 }
 
 function printFeed(feed: Feed, user: User) {
-    for (const item of Object.values(feed)) {
-        console.log(`${item}`)
-    }
-    for (const item of Object.values(users)) {
-        console.log(`${item}`)
-    }
+    console.log(`Printing fields of feeds table`);
+    console.log("");
+    console.log(`id: ${feed.id}`);
+    console.log(`name: ${feed.name}`);
+    console.log(`created at: ${feed.createdAt}`);
+    console.log(`updated at: ${feed.updatedAt}`);
+    console.log(`url: ${feed.url}`);
+    console.log(`user id: ${feed.userId}`);
+    console.log("");
+    console.log(`Printing fields of feeds table`);
+    console.log("");
+    console.log(`id: ${user.id}`);
+    console.log(`name: ${user.name}`);
+    console.log(`created at: ${user.createdAt}`);
+    console.log(`updated at: ${user.updatedAt}`);
 }
 
 export type Feed = typeof feeds.$inferSelect;
 export type User = typeof users.$inferSelect;
+
+export async function handlerListFeeds() {
+    const feedList = await db.select({name: feeds.name, url: feeds.url, user: users.name}).from(feeds).innerJoin(users, eq(users.id, feeds.userId));
+    
+    console.log(feedList);
+}
