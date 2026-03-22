@@ -1,5 +1,3 @@
-import { setUser } from "./config";
-
 export type CommandHandler = (
     cmdName: string,
     ...args: string[]

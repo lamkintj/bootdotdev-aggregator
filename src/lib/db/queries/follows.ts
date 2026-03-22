@@ -1,23 +1,34 @@
 import { db } from "../index";
 import { users, feeds, feed_follows } from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
-export async function createFeedFollow (username: string, feedURL: string) {
-    const [linkedUserId] = await db.
+// HELPER FUNCTIONS
+
+async function linkUser(user: string) {
+    const [linkedUser] = await db.
     select({name: users.name, id: users.id}).
     from(users).
-    where(eq(users.name, username));
-
-    const [linkedFeedId] = await db.
+    where(eq(users.name, user));
+    return linkedUser;
+}
+async function linkFeed(url: string) {
+    const [linkedFeed] = await db.
     select({url: feeds.url, id: feeds.id}).
     from(feeds).
-    where(eq(feeds.url, feedURL));
+    where(eq(feeds.url, url));
+    return linkedFeed;
+}
+
+// END HELPER FUNCTIONS
+export async function createFeedFollow (user: string, url: string) {
+    const linkedFeed = await linkFeed(url);
+    const linkedUser = await linkUser(user);
 
     const [newFeedFollow] = await db.
     insert(feed_follows).
     values({
-        feedId: linkedFeedId.id,
-        userId: linkedUserId.id,
+        feedId: linkedFeed.id,
+        userId: linkedUser.id,
     }).returning();
 
     const [joined] = await db.
@@ -47,4 +58,18 @@ export async function getFeedFollowsForUser (username: string) {
         feedName: r.feeds.name,
         userName: r.users.name,
     }));
+}
+
+export async function unfollowFeed(user: string, url: string): Promise<void> {
+    const linkedFeed = await linkFeed(url);
+    const linkedUser = await linkUser(user);
+
+    await db.
+    delete(feed_follows).
+    where(
+        and(
+            eq(feed_follows.userId, linkedUser.id),
+            eq(feed_follows.feedId, linkedFeed.id)
+        )
+    );
 }
